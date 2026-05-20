@@ -24,6 +24,7 @@ class InferencePipeline:
         self._detector = create_detector(str(mediapipe_path))
         self._model: Optional[Any] = None
         self._current_model_name: Optional[str] = None
+        self._num_classes: int = 4
 
     def list_models(self) -> List[str]:
         return sorted(p.name for p in self._models_dir.glob("*.pth"))
@@ -34,9 +35,10 @@ class InferencePipeline:
         path = self._models_dir / model_name
         if not path.exists():
             raise FileNotFoundError(f"Model not found: {path}")
-        self._model, _ = load_model(str(path))
+        self._model, config = load_model(str(path))
         self._model.to(self._device)
         self._current_model_name = model_name
+        self._num_classes = config.get("model", {}).get("num_classes", 4)
 
     @property
     def current_model(self) -> Optional[str]:
@@ -47,9 +49,9 @@ class InferencePipeline:
             raise RuntimeError("No model loaded.")
         face = detect_and_crop(image_rgb, self._detector)
         if face is None:
-            return {"face_detected": False, "emotions": None}
+            return {"face_detected": False, "emotions": None, "num_classes": self._num_classes}
         emotions = run_inference(self._model, face, self._device)
-        return {"face_detected": True, "emotions": emotions}
+        return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes}
 
     def infer_base64(self, b64_image: str) -> Dict[str, Any]:
         if "," in b64_image:

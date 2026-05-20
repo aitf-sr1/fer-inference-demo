@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fer demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #f0ebe0;
+      --surface: #e4dace;
+      --border:  #c8b89a;
+      --text:    #2e221a;
+      --muted:   #8a7460;
+      --accent:  #7a5c2e;
+      --fill:    #9a7840;
+      --empty:   #d4c8b4;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1.5rem 3rem;
+    }
+
+    header {
+      width: 100%;
+      max-width: 860px;
+      margin-bottom: 1.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 0.85rem;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: lowercase;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 860px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .camera-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .video-wrap {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scaleX(-1);
+    }
+
+    .scan-indicator {
+      position: absolute;
+      bottom: 0.7rem;
+      left: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .scan-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .scan-dot.flash {
+      background: var(--fill);
+      animation: dot-flash 0.6s ease-out forwards;
+    }
+
+    @keyframes dot-flash {
+      0%   { transform: scale(2); opacity: 0.5; background: var(--accent); }
+      100% { transform: scale(1); opacity: 1;   background: var(--fill); }
+    }
+
+    .status-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .emotions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .emotion-row { display: flex; flex-direction: column; gap: 0.25rem; }
+
+    .emotion-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+      text-transform: lowercase;
+      color: var(--muted);
+    }
+
+    .emotion-meta .val { color: var(--text); font-variant-numeric: tabular-nums; }
+
+    .emotion-row.dominant .emotion-meta { color: var(--accent); }
+    .emotion-row.dominant .emotion-meta .val { color: var(--accent); }
+
+    .bar-track {
+      height: 3px;
+      background: var(--empty);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--fill);
+      border-radius: 2px;
+      transition: width 0.45s ease;
+    }
+
+    .emotion-row.dominant .bar-fill { background: var(--accent); }
+
+    .status-line {
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: lowercase;
+      color: var(--muted);
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .history {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.75rem;
+    }
+
+    .history-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.07em;
+      text-transform: lowercase;
+      color: var(--muted);
+    }
+
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      max-height: 190px;
+      overflow-y: auto;
+    }
+
+    .history-list li {
+      display: flex;
+      gap: 0.9rem;
+      font-size: 0.71rem;
+    }
+
+    .history-list .ts {
+      color: var(--muted);
+      opacity: 0.55;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .history-list .ev { color: var(--text); }
+    .history-list .ev.none { color: var(--muted); font-style: italic; }
+
+    .settings {
+      width: 100%;
+      max-width: 860px;
+      margin-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .settings-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      color: var(--muted);
+      padding: 0.65rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .settings-toggle:hover { color: var(--text); }
+
+    .settings-body {
+      display: none;
+      padding: 0.25rem 0 1.25rem;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .settings-body.open { display: flex; }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-width: 200px;
+    }
+
+    .setting-group label {
+      font-size: 0.68rem;
+      letter-spacing: 0.07em;
+      text-transform: lowercase;
+      color: var(--muted);
+    }
+
+    select {
+      appearance: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 0.35rem 1.8rem 0.35rem 0.55rem;
+      cursor: pointer;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7460'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.55rem center;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 3px;
+      background: var(--empty);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 11px;
+      height: 11px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .interval-val {
+      font-size: 0.72rem;
+      color: var(--muted);
+      min-width: 3.2rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    canvas { display: none; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>facial emotion recognition</h1>
+  </header>
+
+  <div class="main">
+    <div class="camera-panel">
+      <div class="video-wrap">
+        <video id="video" autoplay muted playsinline></video>
+        <div class="scan-indicator">
+          <div class="scan-dot" id="scan-dot"></div>
+          <span id="scan-label">waiting</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-panel">
+      <div class="emotions" id="emotions"></div>
+      <div class="status-line" id="status-line">no model selected</div>
+      <div class="history">
+        <div class="history-label">history</div>
+        <ul class="history-list" id="history-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings">
+    <button class="settings-toggle" id="settings-toggle">
+      <span id="toggle-caret">▾</span> settings
+    </button>
+    <div class="settings-body" id="settings-body">
+      <div class="setting-group">
+        <label>model</label>
+        <select id="model-select">
+          <option value="">— no models found —</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>capture interval</label>
+        <div class="range-row">
+          <input type="range" id="interval-range" min="1" max="30" value="3">
+          <span class="interval-val"><span id="interval-val">3</span> s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const EMOTIONS = ['Boredom', 'Engagement', 'Confusion', 'Frustration'];
+
+    const $ = id => document.getElementById(id);
+
+    const state = {
+      model: null,
+      interval: 3,
+      numClasses: 4,
+      timer: null,
+      currentEmotions: null,
+    };
+
+    function buildEmotionRows() {
+      const container = $('emotions');
+      container.innerHTML = '';
+      EMOTIONS.forEach(name => {
+        const row = document.createElement('div');
+        row.className = 'emotion-row';
+        row.id = 'row-' + name;
+        row.innerHTML = `
+          <div class="emotion-meta">
+            <span>${name.toLowerCase()}</span>
+            <span class="val" id="val-${name}">—</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" id="bar-${name}"></div>
+          </div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function resetEmotionRows() {
+      EMOTIONS.forEach(name => {
+        const row = $('row-' + name);
+        const val = $('val-' + name);
+        const bar = $('bar-' + name);
+        if (row) row.classList.remove('dominant');
+        if (val) val.textContent = '—';
+        if (bar) bar.style.width = '0%';
+      });
+    }
+
+    function updateEmotions(emotions, numClasses) {
+      state.currentEmotions = emotions;
+      state.numClasses = numClasses;
+
+      const maxVal = numClasses - 1;
+      let dominantName = null;
+      let dominantVal = -1;
+
+      EMOTIONS.forEach(name => {
+        const level = emotions[name] ?? 0;
+        if (level > dominantVal) { dominantVal = level; dominantName = name; }
+        const pct = maxVal > 0 ? (level / maxVal) * 100 : 0;
+        const val = $('val-' + name);
+        const bar = $('bar-' + name);
+        const row = $('row-' + name);
+        if (val) val.textContent = `${level} / ${maxVal}`;
+        if (bar) bar.style.width = pct + '%';
+        if (row) row.classList.remove('dominant');
+      });
+
+      if (dominantVal > 0 && dominantName) {
+        const row = $('row-' + dominantName);
+        if (row) row.classList.add('dominant');
+      }
+    }
+
+    function dominant(emotions) {
+      if (!emotions) return null;
+      let best = null, bestVal = -1;
+      EMOTIONS.forEach(name => {
+        if ((emotions[name] ?? 0) > bestVal) { bestVal = emotions[name]; best = name; }
+      });
+      return bestVal > 0 ? best.toLowerCase() : null;
+    }
+
+    function addHistory(result) {
+      const list = $('history-list');
+      const li = document.createElement('li');
+      const now = new Date();
+      const ts = now.toTimeString().slice(0, 8);
+
+      let label, cls;
+      if (!result.face_detected) {
+        label = 'no face'; cls = 'none';
+      } else {
+        const d = dominant(result.emotions);
+        if (d) { label = d; cls = ''; }
+        else { label = 'neutral'; cls = ''; }
+      }
+
+      li.innerHTML = `<span class="ts">${ts}</span><span class="ev ${cls}">${label}</span>`;
+      list.prepend(li);
+      while (list.children.length > 20) list.removeChild(list.lastChild);
+    }
+
+    function setStatus(text) {
+      $('status-line').textContent = text;
+    }
+
+    function flashDot() {
+      const dot = $('scan-dot');
+      dot.classList.remove('flash');
+      void dot.offsetWidth;
+      dot.classList.add('flash');
+      dot.addEventListener('animationend', () => dot.classList.remove('flash'), { once: true });
+    }
+
+    async function captureAndInfer() {
+      if (!state.model) return;
+
+      const video = $('video');
+      const canvas = $('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const b64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      flashDot();
+      $('scan-label').textContent = 'scanning';
+
+      try {
+        const res = await fetch('/api/infer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: b64, model: state.model }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          setStatus(err.detail || 'inference error');
+          $('scan-label').textContent = 'error';
+          return;
+        }
+
+        const data = await res.json();
+        addHistory(data);
+
+        if (!data.face_detected) {
+          resetEmotionRows();
+          setStatus('no face detected');
+          $('scan-label').textContent = 'no face';
+        } else {
+          updateEmotions(data.emotions, data.num_classes ?? state.numClasses);
+          const d = dominant(data.emotions);
+          setStatus(d ? d : 'face detected');
+          $('scan-label').textContent = 'ready';
+        }
+      } catch (e) {
+        setStatus('connection error');
+        $('scan-label').textContent = 'error';
+      }
+    }
+
+    function startCapture() {
+      if (state.timer) clearInterval(state.timer);
+      if (!state.model) return;
+      captureAndInfer();
+      state.timer = setInterval(captureAndInfer, state.interval * 1000);
+    }
+
+    function stopCapture() {
+      if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    }
+
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        $('video').srcObject = stream;
+      } catch (e) {
+        setStatus('camera unavailable');
+      }
+    }
+
+    async function loadModels() {
+      try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        const sel = $('model-select');
+        sel.innerHTML = '';
+
+        if (!data.models.length) {
+          sel.innerHTML = '<option value="">— no models found —</option>';
+          return;
+        }
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '— select a model —';
+        sel.appendChild(placeholder);
+
+        data.models.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          if (name === data.current) opt.selected = true;
+          sel.appendChild(opt);
+        });
+
+        const initial = data.current || data.models[0];
+        if (initial) {
+          sel.value = initial;
+          await selectModel(initial);
+        }
+      } catch (e) {
+        setStatus('could not reach server');
+      }
+    }
+
+    async function selectModel(name) {
+      if (!name) return;
+      stopCapture();
+      setStatus('loading model…');
+      $('scan-label').textContent = 'loading';
+      try {
+        const res = await fetch('/api/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: name }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          setStatus(err.detail || 'failed to load model');
+          return;
+        }
+        state.model = name;
+        resetEmotionRows();
+        setStatus('ready');
+        $('scan-label').textContent = 'ready';
+        startCapture();
+      } catch (e) {
+        setStatus('connection error');
+      }
+    }
+
+    $('model-select').addEventListener('change', e => {
+      selectModel(e.target.value);
+    });
+
+    $('interval-range').addEventListener('input', e => {
+      state.interval = Number(e.target.value);
+      $('interval-val').textContent = state.interval;
+      if (state.model) startCapture();
+    });
+
+    $('settings-toggle').addEventListener('click', () => {
+      const body = $('settings-body');
+      const open = body.classList.toggle('open');
+      $('toggle-caret').textContent = open ? '▴' : '▾';
+    });
+
+    buildEmotionRows();
+    initCamera();
+    loadModels();
+  </script>
+
+</body>
+</html>
