@@ -1,7 +1,8 @@
 .env
 __pycache__/
 *.py[cod]
-*.pth
+models/*.pth
+assets/
 .venv/
 venv/
 dist/

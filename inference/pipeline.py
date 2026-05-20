@@ -13,11 +13,14 @@ from .model_loader import load_model, run_inference
 
 load_dotenv()
 
+_ASSETS_DIR = Path(__file__).parent.parent / "assets"
+_DEFAULT_MEDIAPIPE = str(_ASSETS_DIR / "blaze_face_short_range.tflite")
+
 
 class InferencePipeline:
     def __init__(self) -> None:
         mediapipe_path = Path(
-            os.getenv("MEDIAPIPE_MODEL_PATH", "../fer-vit/model/blaze_face_short_range.tflite")
+            os.getenv("MEDIAPIPE_MODEL_PATH", _DEFAULT_MEDIAPIPE)
         ).resolve()
         self._models_dir = Path(os.getenv("MODELS_DIR", "./models")).resolve()
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
