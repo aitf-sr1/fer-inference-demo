@@ -1,60 +1,34 @@
-import copy
-from typing import Any, Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
-import torch
-import torch.nn as nn
-from PIL import Image
-from torchvision import transforms
-
-from fer.vit_model import create_model
+import onnxruntime as ort
 
 EMOTION_LABELS = ["Boredom", "Engagement", "Confusion", "Frustration"]
 
-_INFER_TRANSFORM = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225],
-    ),
-])
+_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+_STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
-def _sanitize_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    cfg = copy.deepcopy(config)
-    m = cfg.get("model", {})
-    m["pretrained"] = False
-    m.pop("dinov3_checkpoint", None)
-    m.pop("farl_checkpoint", None)
-    m["freeze_backbone"] = False
-    return cfg
-
-
-def load_model(checkpoint_path: str) -> Tuple[nn.Module, Dict[str, Any]]:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    config = checkpoint.get("config")
-    if config is None:
-        raise ValueError(f"Checkpoint has no embedded config: {checkpoint_path}")
-
-    config = _sanitize_config(config)
-    model = create_model(config)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    return model, config
+def load_model(
+    checkpoint_path: str, providers: List[str]
+) -> Tuple[ort.InferenceSession, int]:
+    session = ort.InferenceSession(checkpoint_path, providers=providers)
+    output_shape = session.get_outputs()[0].shape
+    dim2 = output_shape[2] if len(output_shape) >= 3 else None
+    num_classes = int(dim2) if isinstance(dim2, int) else 4
+    return session, num_classes
 
 
 def run_inference(
-    model: nn.Module,
+    session: ort.InferenceSession,
     face_rgb: np.ndarray,
-    device: torch.device,
 ) -> Dict[str, int]:
-    image = Image.fromarray(face_rgb)
-    tensor = _INFER_TRANSFORM(image).unsqueeze(0).to(device)
+    img = face_rgb.astype(np.float32) / 255.0
+    img = (img - _MEAN) / _STD
+    img = img.transpose(2, 0, 1)[np.newaxis]
 
-    with torch.no_grad():
-        logits = model(tensor)
+    input_name = session.get_inputs()[0].name
+    logits = session.run(None, {input_name: img})[0]
 
-    predicted = logits.argmax(dim=2).squeeze(0).cpu().tolist()
+    predicted = logits.argmax(axis=2).squeeze(0).tolist()
     return {label: int(cls) for label, cls in zip(EMOTION_LABELS, predicted)}

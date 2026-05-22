@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 import cv2
 import numpy as np
-import torch
+import onnxruntime as ort
 from dotenv import load_dotenv
 
 from .face_detector import create_detector, detect_and_crop
@@ -23,14 +23,19 @@ class InferencePipeline:
             os.getenv("MEDIAPIPE_MODEL_PATH", _DEFAULT_MEDIAPIPE)
         ).resolve()
         self._models_dir = Path(os.getenv("MODELS_DIR", "./models")).resolve()
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        available = ort.get_available_providers()
+        self._providers = (
+            ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            if "CUDAExecutionProvider" in available
+            else ["CPUExecutionProvider"]
+        )
         self._detector = create_detector(str(mediapipe_path))
-        self._model: Optional[Any] = None
+        self._model: Optional[ort.InferenceSession] = None
         self._current_model_name: Optional[str] = None
         self._num_classes: int = 4
 
     def list_models(self) -> List[str]:
-        return sorted(p.name for p in self._models_dir.glob("*.pth"))
+        return sorted(p.name for p in self._models_dir.glob("*.onnx"))
 
     def load_model(self, model_name: str) -> None:
         if model_name == self._current_model_name:
@@ -38,10 +43,8 @@ class InferencePipeline:
         path = self._models_dir / model_name
         if not path.exists():
             raise FileNotFoundError(f"Model not found: {path}")
-        self._model, config = load_model(str(path))
-        self._model.to(self._device)
+        self._model, self._num_classes = load_model(str(path), self._providers)
         self._current_model_name = model_name
-        self._num_classes = config.get("model", {}).get("num_classes", 4)
 
     @property
     def current_model(self) -> Optional[str]:
@@ -53,7 +56,7 @@ class InferencePipeline:
         face = detect_and_crop(image_rgb, self._detector)
         if face is None:
             return {"face_detected": False, "emotions": None, "num_classes": self._num_classes}
-        emotions = run_inference(self._model, face, self._device)
+        emotions = run_inference(self._model, face)
         return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes}
 
     def infer_base64(self, b64_image: str) -> Dict[str, Any]:
