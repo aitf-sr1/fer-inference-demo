@@ -124,5 +124,4 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MODELS_DIR` | `./models` | Directory scanned for `.onnx` model files |
 | `MEDIAPIPE_MODEL_PATH` | `assets/blaze_face_short_range.tflite` | Path to the BlazeFace TFLite model |
