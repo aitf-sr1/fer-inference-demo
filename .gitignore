@@ -1,7 +1,7 @@
 .env
 __pycache__/
 *.py[cod]
-models/*.pth
+models/
 assets/
 .venv/
 venv/
