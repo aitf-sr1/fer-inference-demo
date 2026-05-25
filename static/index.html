@@ -202,6 +202,15 @@
     .history-list .ev { color: var(--text); }
     .history-list .ev.none { color: var(--muted); font-style: italic; }
 
+    .history-list .timing {
+      margin-left: auto;
+      color: var(--muted);
+      opacity: 0.6;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
     .settings {
       width: 100%;
       max-width: 860px;
@@ -445,7 +454,7 @@
       return bestVal > 0 ? best.toLowerCase() : null;
     }
 
-    function addHistory(result) {
+    function addHistory(result, totalMs) {
       const list = $('history-list');
       const li = document.createElement('li');
       const now = new Date();
@@ -460,7 +469,12 @@
         else { label = 'neutral'; cls = ''; }
       }
 
-      li.innerHTML = `<span class="ts">${ts}</span><span class="ev ${cls}">${label}</span>`;
+      const inferMs = result.inference_ms != null ? result.inference_ms : null;
+      const timingParts = [];
+      if (inferMs !== null) timingParts.push(`model ${inferMs}ms`);
+      timingParts.push(`total ${totalMs}ms`);
+
+      li.innerHTML = `<span class="ts">${ts}</span><span class="ev ${cls}">${label}</span><span class="timing">${timingParts.join(' · ')}</span>`;
       list.prepend(li);
       while (list.children.length > 20) list.removeChild(list.lastChild);
     }
@@ -490,6 +504,7 @@
 
       flashDot();
       $('scan-label').textContent = 'scanning';
+      const t0 = performance.now();
 
       try {
         const res = await fetch('/api/infer', {
@@ -506,7 +521,8 @@
         }
 
         const data = await res.json();
-        addHistory(data);
+        const totalMs = Math.round(performance.now() - t0);
+        addHistory(data, totalMs);
 
         if (!data.face_detected) {
           resetEmotionRows();

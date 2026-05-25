@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -55,9 +56,11 @@ class InferencePipeline:
             raise RuntimeError("No model loaded.")
         face = detect_and_crop(image_rgb, self._detector)
         if face is None:
-            return {"face_detected": False, "emotions": None, "num_classes": self._num_classes}
+            return {"face_detected": False, "emotions": None, "num_classes": self._num_classes, "inference_ms": None}
+        t0 = time.perf_counter()
         emotions = run_inference(self._model, face)
-        return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes}
+        inference_ms = round((time.perf_counter() - t0) * 1000)
+        return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes, "inference_ms": inference_ms}
 
     def infer_base64(self, b64_image: str) -> Dict[str, Any]:
         if "," in b64_image:
