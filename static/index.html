@@ -434,13 +434,15 @@
       let dominantVal = -1;
 
       EMOTIONS.forEach(name => {
-        const level = emotions[name] ?? 0;
+        const entry = emotions[name];
+        const level = (entry?.class ?? entry ?? 0);
+        const confidence = entry?.confidence ?? null;
         if (level > dominantVal) { dominantVal = level; dominantName = name; }
         const pct = maxVal > 0 ? (level / maxVal) * 100 : 0;
         const val = $('val-' + name);
         const bar = $('bar-' + name);
         const row = $('row-' + name);
-        if (val) val.textContent = `${level} / ${maxVal}`;
+        if (val) val.textContent = (level > 0 && confidence !== null) ? `${confidence}%` : '—';
         if (bar) bar.style.width = pct + '%';
         if (row) row.classList.remove('dominant');
       });
@@ -470,8 +472,14 @@
       if (!result.face_detected) {
         label = 'no face'; cls = 'none';
       } else {
-        const active = EMOTIONS.filter(name => (result.emotions[name] ?? 0) > 0)
-          .map(name => name.toLowerCase());
+        const active = EMOTIONS.filter(name => {
+          const entry = result.emotions[name];
+          return (entry?.class ?? entry ?? 0) > 0;
+        }).map(name => {
+          const entry = result.emotions[name];
+          const conf = entry?.confidence;
+          return conf != null ? `${name.toLowerCase()} ${conf}%` : name.toLowerCase();
+        });
         if (active.length) { label = active.join(', '); cls = ''; }
         else { label = 'neutral'; cls = ''; }
       }
@@ -561,8 +569,14 @@
         } else {
           updateEmotions(data.emotions, data.num_classes ?? state.numClasses);
           drawBbox(data.bbox);
-          const active = EMOTIONS.filter(name => (data.emotions[name] ?? 0) > 0)
-            .map(name => name.toLowerCase());
+          const active = EMOTIONS.filter(name => {
+            const entry = data.emotions[name];
+            return (entry?.class ?? entry ?? 0) > 0;
+          }).map(name => {
+            const entry = data.emotions[name];
+            const conf = entry?.confidence;
+            return conf != null ? `${name.toLowerCase()} ${conf}%` : name.toLowerCase();
+          });
           setStatus(active.length ? active.join(', ') : 'face detected');
           $('scan-label').textContent = 'ready';
         }

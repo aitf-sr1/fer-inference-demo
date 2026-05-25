@@ -22,7 +22,7 @@ def load_model(
 def run_inference(
     session: ort.InferenceSession,
     face_rgb: np.ndarray,
-) -> Dict[str, int]:
+) -> Dict[str, dict]:
     img = face_rgb.astype(np.float32) / 255.0
     img = (img - _MEAN) / _STD
     img = img.transpose(2, 0, 1)[np.newaxis]
@@ -30,5 +30,15 @@ def run_inference(
     input_name = session.get_inputs()[0].name
     logits = session.run(None, {input_name: img})[0]
 
+    exp = np.exp(logits - logits.max(axis=2, keepdims=True))
+    probs = exp / exp.sum(axis=2, keepdims=True)
+    probs = probs.squeeze(0)
+
     predicted = logits.argmax(axis=2).squeeze(0).tolist()
-    return {label: int(cls) for label, cls in zip(EMOTION_LABELS, predicted)}
+    return {
+        label: {
+            "class": int(cls),
+            "confidence": round(float(probs[i, int(cls)]) * 100, 1),
+        }
+        for i, (label, cls) in enumerate(zip(EMOTION_LABELS, predicted))
+    }
