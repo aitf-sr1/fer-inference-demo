@@ -75,6 +75,16 @@
       transform: scaleX(-1);
     }
 
+    #bbox-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform: scaleX(-1);
+    }
+
     .scan-indicator {
       position: absolute;
       bottom: 0.7rem;
@@ -304,7 +314,7 @@
       flex-shrink: 0;
     }
 
-    canvas { display: none; }
+    #canvas { display: none; }
 
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -321,6 +331,7 @@
     <div class="camera-panel">
       <div class="video-wrap">
         <video id="video" autoplay muted playsinline></video>
+        <canvas id="bbox-canvas"></canvas>
         <div class="scan-indicator">
           <div class="scan-dot" id="scan-dot"></div>
           <span id="scan-label">waiting</span>
@@ -474,6 +485,24 @@
       dot.addEventListener('animationend', () => dot.classList.remove('flash'), { once: true });
     }
 
+    function drawBbox(bbox) {
+      const overlay = $('bbox-canvas');
+      const wrap = overlay.parentElement;
+      overlay.width = wrap.clientWidth;
+      overlay.height = wrap.clientHeight;
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      if (!bbox) return;
+      const [x1, y1, x2, y2] = bbox;
+      const px = x1 * overlay.width;
+      const py = y1 * overlay.height;
+      const pw = (x2 - x1) * overlay.width;
+      const ph = (y2 - y1) * overlay.height;
+      ctx.strokeStyle = 'rgba(122, 92, 46, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, pw, ph);
+    }
+
     async function captureAndInfer() {
       if (!state.model) return;
 
@@ -509,16 +538,19 @@
 
         if (!data.face_detected) {
           resetEmotionRows();
+          drawBbox(null);
           setStatus('no face detected');
           $('scan-label').textContent = 'no face';
         } else {
           updateEmotions(data.emotions, data.num_classes ?? state.numClasses);
+          drawBbox(data.bbox);
           const active = EMOTIONS.filter(name => (data.emotions[name] ?? 0) > 0)
             .map(name => name.toLowerCase());
           setStatus(active.length ? active.join(', ') : 'face detected');
           $('scan-label').textContent = 'ready';
         }
       } catch (e) {
+        drawBbox(null);
         setStatus('connection error');
         $('scan-label').textContent = 'error';
       }

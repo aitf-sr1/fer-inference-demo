@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import cv2
 import mediapipe as mp
@@ -22,14 +22,14 @@ def create_detector(model_path: str) -> vision.FaceDetector:
 def detect_and_crop(
     img_rgb: np.ndarray,
     detector: vision.FaceDetector,
-) -> Optional[np.ndarray]:
+) -> Tuple[Optional[np.ndarray], Optional[Tuple[float, float, float, float]]]:
     h, w = img_rgb.shape[:2]
 
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
     result = detector.detect(mp_image)
 
     if not result.detections:
-        return None
+        return None, None
 
     bbox = result.detections[0].bounding_box
     x_min, y_min = bbox.origin_x, bbox.origin_y
@@ -46,6 +46,7 @@ def detect_and_crop(
 
     cropped = img_rgb[y1:y2, x1:x2]
     if cropped.size == 0:
-        return None
+        return None, None
 
-    return cv2.resize(cropped, (OUTPUT_SIZE, OUTPUT_SIZE))
+    normalized_bbox = (x1 / w, y1 / h, x2 / w, y2 / h)
+    return cv2.resize(cropped, (OUTPUT_SIZE, OUTPUT_SIZE)), normalized_bbox

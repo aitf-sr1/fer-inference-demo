@@ -54,13 +54,13 @@ class InferencePipeline:
     def infer(self, image_rgb: np.ndarray) -> Dict[str, Any]:
         if self._model is None:
             raise RuntimeError("No model loaded.")
-        face = detect_and_crop(image_rgb, self._detector)
+        face, bbox = detect_and_crop(image_rgb, self._detector)
         if face is None:
-            return {"face_detected": False, "emotions": None, "num_classes": self._num_classes, "inference_ms": None}
+            return {"face_detected": False, "emotions": None, "num_classes": self._num_classes, "inference_ms": None, "bbox": None}
         t0 = time.perf_counter()
         emotions = run_inference(self._model, face)
         inference_ms = round((time.perf_counter() - t0) * 1000)
-        return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes, "inference_ms": inference_ms}
+        return {"face_detected": True, "emotions": emotions, "num_classes": self._num_classes, "inference_ms": inference_ms, "bbox": bbox}
 
     def infer_base64(self, b64_image: str) -> Dict[str, Any]:
         if "," in b64_image:
