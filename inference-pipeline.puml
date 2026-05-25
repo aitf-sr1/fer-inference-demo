@@ -1,0 +1,40 @@
+@startuml
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #4A90D9
+skinparam ActivityBorderColor #2C5F8A
+skinparam ActivityFontColor white
+skinparam ActivityDiamondBackgroundColor #F5A623
+skinparam ActivityDiamondBorderColor #C07D10
+skinparam ActivityDiamondFontColor white
+skinparam ArrowColor #2C5F8A
+
+start
+
+:Webcam Capture;
+note right: Frame scaled to max 640px\nencoded as JPEG base64
+
+:POST /api/infer;
+
+:Face Detection;
+note right: MediaPipe BlazeFace\ncrop + resize to 224x224
+
+if (Face Detected?) then (No)
+  :Return no face;
+else (Yes)
+  :Preprocessing;
+  note right: Normalize
+
+  :ONNX Inference;
+
+  :Softmax + Argmax;
+  note right: Class + confidence\nper emotion label
+
+  :Return emotions + bbox + timing;
+
+  :Display on Browser;
+  note right: Bounding box overlay\nemotion bars with confidence\nhistory log
+endif
+
+stop
+@enduml
