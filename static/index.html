@@ -464,8 +464,9 @@
       if (!result.face_detected) {
         label = 'no face'; cls = 'none';
       } else {
-        const d = dominant(result.emotions);
-        if (d) { label = d; cls = ''; }
+        const active = EMOTIONS.filter(name => (result.emotions[name] ?? 0) > 0)
+          .map(name => name.toLowerCase());
+        if (active.length) { label = active.join(', '); cls = ''; }
         else { label = 'neutral'; cls = ''; }
       }
 
