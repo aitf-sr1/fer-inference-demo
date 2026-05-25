@@ -314,6 +314,17 @@
       flex-shrink: 0;
     }
 
+    .device-info {
+      width: 100%;
+      max-width: 860px;
+      padding: 0.5rem 0 1rem;
+      font-size: 0.67rem;
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
     #canvas { display: none; }
 
     ::-webkit-scrollbar { width: 4px; }
@@ -366,6 +377,8 @@
       </div>
     </div>
   </div>
+
+  <div class="device-info" id="device-info"></div>
 
   <canvas id="canvas"></canvas>
 
@@ -647,9 +660,18 @@
       if (state.model) startCapture();
     });
 
+    async function loadDeviceInfo() {
+      try {
+        const res = await fetch('/api/info');
+        const data = await res.json();
+        $('device-info').textContent = `inference device: ${data.device}`;
+      } catch (e) {}
+    }
+
     buildEmotionRows();
     initCamera();
     loadModels();
+    loadDeviceInfo();
   </script>
 
 </body>

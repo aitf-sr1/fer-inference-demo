@@ -48,6 +48,10 @@ class InferencePipeline:
         self._current_model_name = model_name
 
     @property
+    def providers(self) -> list:
+        return self._providers
+
+    @property
     def current_model(self) -> Optional[str]:
         return self._current_model_name
 

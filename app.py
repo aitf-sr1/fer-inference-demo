@@ -52,7 +52,13 @@ def list_models() -> Dict[str, Any]:
     }
 
 
-@app.post("/api/model")
+@app.get("/api/info")
+def info() -> Dict[str, Any]:
+    provider = pipeline.providers[0].replace("ExecutionProvider", "").lower()
+    return {"device": provider}
+
+
+
 def select_model(body: LoadModelRequest) -> Dict[str, str]:
     try:
         pipeline.load_model(body.model)
