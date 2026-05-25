@@ -521,11 +521,15 @@
 
       const video = $('video');
       const canvas = $('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      const MAX_DIM = 640;
+      const srcW = video.videoWidth || 640;
+      const srcH = video.videoHeight || 480;
+      const scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
+      canvas.width = Math.round(srcW * scale);
+      canvas.height = Math.round(srcH * scale);
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const b64 = canvas.toDataURL('image/jpeg', 0.85);
+      const b64 = canvas.toDataURL('image/jpeg', 0.80);
 
       flashDot();
       $('scan-label').textContent = 'scanning';
