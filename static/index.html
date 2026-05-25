@@ -219,34 +219,16 @@
       max-width: 860px;
       margin-top: 2rem;
       border-top: 1px solid var(--border);
+      padding-top: 0.75rem;
     }
-
-    .settings-toggle {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-      text-transform: lowercase;
-      color: var(--muted);
-      padding: 0.65rem 0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .settings-toggle:hover { color: var(--text); }
 
     .settings-body {
-      display: none;
-      padding: 0.25rem 0 1.25rem;
+      display: flex;
+      padding-bottom: 1.25rem;
       gap: 2.5rem;
       flex-wrap: wrap;
       align-items: flex-end;
     }
-
-    .settings-body.open { display: flex; }
 
     .setting-group {
       display: flex;
@@ -357,9 +339,6 @@
   </div>
 
   <div class="settings">
-    <button class="settings-toggle" id="settings-toggle">
-      <span id="toggle-caret">▾</span> settings
-    </button>
     <div class="settings-body" id="settings-body">
       <div class="setting-group">
         <label>model</label>
@@ -634,12 +613,6 @@
       state.interval = Number(e.target.value);
       $('interval-val').textContent = state.interval;
       if (state.model) startCapture();
-    });
-
-    $('settings-toggle').addEventListener('click', () => {
-      const body = $('settings-body');
-      const open = body.classList.toggle('open');
-      $('toggle-caret').textContent = open ? '▴' : '▾';
     });
 
     buildEmotionRows();
