@@ -15,7 +15,7 @@ def load_model(
     session = ort.InferenceSession(checkpoint_path, providers=providers)
     output_shape = session.get_outputs()[0].shape
     dim2 = output_shape[2] if len(output_shape) >= 3 else None
-    num_classes = int(dim2) if isinstance(dim2, int) else 4
+    num_classes = int(dim2) if isinstance(dim2, int) else 2
     return session, num_classes
 
 
@@ -30,10 +30,19 @@ def run_inference(
     input_name = session.get_inputs()[0].name
     logits = session.run(None, {input_name: img})[0]
 
+    if logits.ndim == 2:
+        scores = 1 / (1 + np.exp(-logits.squeeze(0)))
+        return {
+            label: {
+                "class": int(scores[i] >= 0.5),
+                "confidence": round(float(scores[i]) * 100, 1),
+            }
+            for i, label in enumerate(EMOTION_LABELS)
+        }
+
     exp = np.exp(logits - logits.max(axis=2, keepdims=True))
     probs = exp / exp.sum(axis=2, keepdims=True)
     probs = probs.squeeze(0)
-
     predicted = logits.argmax(axis=2).squeeze(0).tolist()
     return {
         label: {
