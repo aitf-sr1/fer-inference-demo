@@ -59,6 +59,7 @@ def info() -> Dict[str, Any]:
 
 
 
+@app.post("/api/model")
 def select_model(body: LoadModelRequest) -> Dict[str, str]:
     try:
         pipeline.load_model(body.model)
