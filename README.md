@@ -4,6 +4,8 @@ A web-based demo for real-time facial emotion recognition. Captures webcam frame
 
 **Emotions detected:** Boredom · Engagement · Confusion · Frustration
 
+![Inference Pipeline](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/aitf-sr1/fer-inference-demo/refs/heads/main/inference-pipeline.puml)
+
 ---
 
 ## Requirements
