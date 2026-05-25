@@ -531,8 +531,9 @@
           $('scan-label').textContent = 'no face';
         } else {
           updateEmotions(data.emotions, data.num_classes ?? state.numClasses);
-          const d = dominant(data.emotions);
-          setStatus(d ? d : 'face detected');
+          const active = EMOTIONS.filter(name => (data.emotions[name] ?? 0) > 0)
+            .map(name => name.toLowerCase());
+          setStatus(active.length ? active.join(', ') : 'face detected');
           $('scan-label').textContent = 'ready';
         }
       } catch (e) {
